@@ -1,3 +1,5 @@
+#include <ctime>
+#include <algorithm>
 #include "WordBook.h"
 
 class StudyModule{
@@ -23,17 +25,17 @@ public:
 class RevisionModule: public StudyModule{
 private:
     vector<WordCard*> revisionList;
-
     int revisionMenu();
-    bool calculateStage(WordCard word);
-    void mcQuiz();
-    void spellingQuiz();
+    bool calculateStage(WordCard &word);
+    int mcQuiz();
+    int spellingQuiz();
+    void correctAnswer(WordCard *wptr);
     void wrongAnswer(WordCard *wptr);
 public:
+    int revisionScore = -1;
+    RevisionModule(){}
     RevisionModule(WordBook &currentBook):StudyModule(currentBook){}
-    ~RevisionModule(){
-        dataWrite();
-    }
+    ~RevisionModule();
     void controller();
 };
 

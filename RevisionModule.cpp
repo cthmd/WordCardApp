@@ -1,42 +1,50 @@
 #include "StudyModule.h"
 #include <cstdlib>
 
-int RevisionModule::revisionMenu(){
+int RevisionModule::revisionMenu(){ // 复习模块菜单
     //system("cls");
     cout<<"选择复习方式:"<<endl;
     cout<<"1 看词选意"<<endl;
     cout<<"2 单词拼写"<<endl;
-    cout<<"0 返回"<<endl;
-    int input;
+    cout<<"` 返回"<<endl;
+    char input;
     cin>>input;
     return input;
 }
 
-void RevisionModule::controller(){
-    int input = revisionMenu();
+void RevisionModule::controller(){ // 主控制器
+    studyProgress(); // 更新学习进度
+    char input = revisionMenu();
     for(int i = 0; i < learnedList.size(); i++){
-        if(calculateStage(learnedList[i])){
+        if(calculateStage(learnedList[i])){ // 计算当前单词今日是否需复习
             revisionList.push_back(&learnedList[i]);
-            cout<<(revisionList.back())<<endl;
         }
     }
-    if(revisionList.size() == 0){
+    if(revisionList.size() == 0){ // 没有复习的单词
         cout<<"无复习内容"<<endl;
         return;
     }
-    if(input == 0){
+    if(input == '`'){
         return;
     }
-    else if(input == 1){
-       mcQuiz();
+    int temp = 0;
+    if(input == '1'){
+        temp = mcQuiz(); // 选择复习题
     }
-    else if(input == 2){
-        spellingQuiz();
+    if(input == '2'){
+        temp = spellingQuiz(); // 拼写复习题
     }
+    if(revisionScore > 0){ // 计算此次复习的分数
+        revisionScore = (revisionScore + temp) * 0.5;
+    }
+    else{
+        revisionScore = temp;
+    }
+    cout<<"得分: "<<temp<<"/"<<revisionList.size()<<endl;
 }
 
 
-bool RevisionModule::calculateStage(WordCard word){ // 0 无需复习
+bool RevisionModule::calculateStage(WordCard &word){ // 0 无需复习
     return true;
     if(word.getPriority() == 0){
         return false;
@@ -79,7 +87,8 @@ bool RevisionModule::calculateStage(WordCard word){ // 0 无需复习
     return false;
 }
 
-void RevisionModule::spellingQuiz(){
+int RevisionModule::spellingQuiz(){
+    int score = revisionList.size();
     for(auto wptr:revisionList){
         //system("cls");
         for(auto m:wptr->getWord()){
@@ -91,23 +100,30 @@ void RevisionModule::spellingQuiz(){
         cin>>input;
         while(input != wptr->getWord()){
            cout<<"错误"<<endl;
-           cout<<"1 继续尝试 2 显示答案 0 返回"<<endl;
+           cout<<"1 继续尝试 2 显示答案 ` 返回"<<endl;
            cin>>input;
-           if(stoi(input) == 2){ // 答错升级，日期重开
+           if(input == "2"){ // 答错升级，日期重开
+               cout<<"正确答案： "<<wptr->getWord()<<endl;
                wrongAnswer(wptr);
+               score--;
                break;
            }
-           if(stoi(input) == 0){
-               return;
+           if(input == "`"){
+               return score;
            }
            cout<<"输入单词：";
            cin>>input;
         }
-        cout<<"正确答案： "<<wptr->getWord()<<endl;
+        if(input == wptr->getWord()){
+            cout<<"正确"<<endl;
+            correctAnswer(wptr);
+        }
     }
+    return score;
 }
 
-void RevisionModule::mcQuiz(){
+int RevisionModule::mcQuiz(){
+    int score = revisionList.size();
     for(auto wptr:revisionList){
         //system("cls");
         int answer = (rand() % 4);
@@ -122,30 +138,42 @@ void RevisionModule::mcQuiz(){
                 while(choice[i] == choice[answer]);
             }
         }
-        cout<<"选择正确解释 0 返回"<<endl;
+        cout<<"选择正确解释 ` 返回"<<endl;
         cout<<wptr->getWord()<<endl;
         for(int i = 0; i < 4; i++){
             cout<<i + 1<<" "<<choice[i]<<endl;
         }
-        int input;
+        char input;
         cin>>input;
-        if(input == 0){
-            return;
+        if(input == '`'){
+            return score;
         }
-        if(input - 1 == answer){
+        if(input - '0' - 1 == answer){
             cout<<"正确"<<endl;
+            correctAnswer(wptr);
         }
         else{
             cout<<"错误 正确答案： "<<choice[answer]<<endl;
             wrongAnswer(wptr);
+            score--;
         }
+    }
+    return score;
+}
+
+void RevisionModule::correctAnswer(WordCard *wptr){
+    if(wptr->getStudyDate().back() != date){
+        wptr->setStudyStage(wptr->getPriority(), date);
     }
 }
 
-void RevisionModule::wrongAnswer(WordCard *wptr){ // 还无法更新
+void RevisionModule::wrongAnswer(WordCard *wptr){
     vector<int> newDate;
     newDate.push_back(date);
     wptr->setStudyStage(wptr->getPriority() + 1, newDate);
 }
 
+RevisionModule::~RevisionModule(){
+    dataWrite();
+}
 

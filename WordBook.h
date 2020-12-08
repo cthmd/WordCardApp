@@ -3,26 +3,35 @@
 #include <iostream>
 #include <fstream>
 #include <vector>
+#include <cstdio>
+#include <algorithm>
 using namespace std;
 
 class WordCard{
 private:
     string word;
     string phonetic;
-    vector<string> meanings;
     int priority;
+    vector<string> meanings;
     vector<int> studyDate;
 
 public:
     WordCard(){}
     WordCard(string line);
-    string getWord(){
+    WordCard(const WordCard& obj){
+        word = obj.getWord();
+        phonetic = obj.getPhonetic();
+        priority = obj.getPriority();
+        meanings = obj.getMeanings();
+        studyDate = obj.getStudyDate();
+    }
+    string getWord() const{
         return word;
     }
-    string getPhonetic(){
+    string getPhonetic() const{
         return phonetic;
     }
-    vector<string> getMeanings(){
+    vector<string> getMeanings() const{
         return meanings;
     }
     string getMeaningsString(){
@@ -46,27 +55,30 @@ public:
         }
         studyDate = list;
     }
-    int getPriority(){
+    int getPriority() const{
         return priority;
     }
-    vector<int> getStudyDate(){
+    vector<int> getStudyDate() const{
         return studyDate;
+    }
+    void dataUpdate(ofstream &file, int option = 1);
+    bool operator<(const WordCard &other) const{
+        return word.compare(other.getWord()) < 0;
     }
 };
 
 class WordBook{
 protected:
-    bool creation;
+    bool creation = false;
     string title;
     string filePath;
     vector<WordCard> wordList;
     void readFile();
 public:
-    WordBook(){
-        creation = false;
-    }
+    WordBook(){}
     WordBook(string title, string filepath);
     static void printWordList(vector<WordCard> list);
+    static vector<string> splitLine(string line);
     bool isCreated(){
         return creation;
     }
@@ -80,11 +92,9 @@ public:
 
 class NoteBook:public WordBook{
 private:
-    void sort();
+    vector<WordCard> alphabeticSort();
 public:
-    NoteBook(string title):WordBook(){
-        this->title = title;
-    }
+    NoteBook(string title, string filePath):WordBook(title, filePath){}
     void view();
     void addWord(WordCard word);
 };
