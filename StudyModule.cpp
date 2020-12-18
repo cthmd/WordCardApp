@@ -8,31 +8,44 @@ StudyModule::StudyModule(WordBook &currentBook){
 }
 
 bool StudyModule::display(WordCard &word, vector<NoteBook*> &noteBookPool){ // 展示单词
-    //system("cls");
+    system("cls");
     cout<<word.getWord()<<endl;
     cout<<word.getPhonetic()<<endl;
     cout<<word.getMeaningsString()<<endl;
     cout<<endl<<endl;
     cout<<"1 太简单 2 还需要复习 3 新单词"<<endl;
-    cout<<"9 添加至单词本 ` 返回"<<endl;
+    cout<<"0 添加至单词本 ` 返回"<<endl;
     char input;
-    cin>>input;
-    if(input == '9'){ // 添加至自定义单词表
-        if(noteBookPool.size() == 0){ // 当前无单词表
-            cout<<"请先创建单词表"<<endl;
-        }
-        else{ // 选择单词表
-            cout << "添加至: ";
-            for(int i = 0; i < noteBookPool.size(); i++){
-                cout<<i + 1<< " " << noteBookPool[i]->getTitle() << endl;
-            }
-            cin>>input;
-            if(input > '0' && input - '0' <= noteBookPool.size()){
-                noteBookPool[input - '0' - 1]->addWord(word);
-            }
-        }
-        cout<<"1 太简单 2 还需要复习 3 新单词"<<endl;
+    do{
         cin>>input;
+    }while(!((input >= '0' && input <= '3') || input == '`'));
+
+    if(input == '0'){ // 添加至自定义单词本
+        if(noteBookPool.size() == 0){ // 当前无单词本
+            cout<<"请先创建单词本"<<endl;
+        }
+        else{ // 选择单词本
+            do{
+                cout << "添加至: (` 取消)" << endl;
+                for(int i = 0; i < noteBookPool.size(); i++){
+                    cout << i + 1 << " " << noteBookPool[i]->getTitle() << endl;
+                }
+                cin >> input;
+                if(input > '0' && input - '0' <= noteBookPool.size()){
+                    noteBookPool[input - '0' - 1]->addWord(word);
+                    cout << "添加成功" << endl;
+                    break;
+                }else if(input == '`'){
+                    cout << "取消" << endl;
+                }else{
+                    cout << "添加失败" << endl;
+                }
+            }while(input != '`');
+        }
+        do{
+            cout<<"1 太简单 2 还需要复习 3 新单词"<<endl;
+            cin>>input;
+        }while(!((input >= '0' && input <= '3') || input == '`'));
     }
     if(input >= '1' && input <= '3'){ // 用户设置难度等级
         word.setStudyStage(input - '0', date);
@@ -41,19 +54,20 @@ bool StudyModule::display(WordCard &word, vector<NoteBook*> &noteBookPool){ // �
     return input == '`'; // true返回菜单
 }
 
-void StudyModule::controller(int round, vector<NoteBook*> &noteBookPool){ // 学习模块控制组件
+int StudyModule::controller(int round, vector<NoteBook*> &noteBookPool){ // 学习模块控制组件
     studyProgress(); // 更新学习进度
     random_shuffle(unlearnList.begin(), unlearnList.end()); // 乱序
     for(int i = 0; i < round; i++){ // 展示单词
         if(display(unlearnList[i], noteBookPool)){ // 返回菜单
-            return;
+            return round - i + 1;
         }
     }
+    return 0;
 }
 
 void StudyModule::dataWrite(){ // 写入数据
     string fileName = wordBook.getTitle(); // 读取文件名
-    ofstream recordFile("C:\\Users\\cass\\Desktop\\WordBook\\" + fileName + "_record.txt");
+    ofstream recordFile(".\\recordfiles\\usersettings\\" + fileName + "_record.txt");
     for(auto w:learnedList){ // 写入已学习单词
         w.dataUpdate(recordFile);
     }
@@ -87,5 +101,5 @@ void StudyModule::dataRead(string filePath){ // 读取数据
 void StudyModule::studyProgress(){ // 更新学习进度
     unlearnList = wordBook.getList();
     string fileName = wordBook.getTitle();
-    dataRead("C:\\Users\\cass\\Desktop\\WordBook\\" + fileName + "_record.txt"); // 读取已学习单词
+    dataRead(".\\recordfiles\\usersettings\\" + fileName + "_record.txt"); // 读取已学习单词
 }

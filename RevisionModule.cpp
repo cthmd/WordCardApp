@@ -1,8 +1,9 @@
 #include "StudyModule.h"
 #include <cstdlib>
+#include <conio.h>
 
 int RevisionModule::revisionMenu(){ // 复习模块菜单
-    //system("cls");
+    system("cls");
     cout<<"选择复习方式:"<<endl;
     cout<<"1 看词选意"<<endl;
     cout<<"2 单词拼写"<<endl;
@@ -22,7 +23,16 @@ void RevisionModule::controller(){ // 主控制器
     }
     if(revisionList.size() == 0){ // 没有复习的单词
         cout<<"无复习内容"<<endl;
-        return;
+        cout<<"1 继续复习所有单词 ` 返回"<<endl;
+        char c = getch();
+        if(c == '1'){
+            for(int i = 0; i < learnedList.size(); i++){
+                revisionList.push_back(&learnedList[i]);
+            }
+        }
+        else{
+            return;        
+        }
     }
     if(input == '`'){
         return;
@@ -40,12 +50,11 @@ void RevisionModule::controller(){ // 主控制器
     else{
         revisionScore = temp;
     }
-    cout<<"得分: "<<temp<<"/"<<revisionList.size()<<endl;
+    cout<<"得分: "<<temp<<endl;
 }
 
 
-bool RevisionModule::calculateStage(WordCard &word){ // 0 无需复习
-    return true;
+bool RevisionModule::calculateStage(WordCard &word){ // 根据记忆曲线设计的复习周期
     if(word.getPriority() == 0){
         return false;
     }
@@ -87,25 +96,23 @@ bool RevisionModule::calculateStage(WordCard &word){ // 0 无需复习
     return false;
 }
 
-int RevisionModule::spellingQuiz(){
-    int score = revisionList.size();
-    for(auto wptr:revisionList){
-        //system("cls");
-        for(auto m:wptr->getWord()){
-            cout<<m<<" ";
-        }
-        cout<<endl;
+int RevisionModule::spellingQuiz(){ // 拼写复习题
+    int score = 0;
+    int count = 0;
+    for(auto wptr:revisionList){ // 遍历复习列表
+        system("cls");
+        cout<<wptr->getMeaningsString()<<endl;
         string input;
         cout<<"输入单词：";
         cin>>input;
-        while(input != wptr->getWord()){
+        while(input != wptr->getWord()){ // 错误回答
            cout<<"错误"<<endl;
            cout<<"1 继续尝试 2 显示答案 ` 返回"<<endl;
            cin>>input;
-           if(input == "2"){ // 答错升级，日期重开
+           if(input == "2"){ // 显示答案，记为错误回答
                cout<<"正确答案： "<<wptr->getWord()<<endl;
-               wrongAnswer(wptr);
-               score--;
+               cout<<"按任意键继续"<<endl;
+               wrongAnswer(wptr);  // 处理错误回答
                break;
            }
            if(input == "`"){
@@ -114,28 +121,33 @@ int RevisionModule::spellingQuiz(){
            cout<<"输入单词：";
            cin>>input;
         }
-        if(input == wptr->getWord()){
+        if(input == wptr->getWord()){ // 回答正确
             cout<<"正确"<<endl;
-            correctAnswer(wptr);
+            cout<<"按任意键继续"<<endl;
+            correctAnswer(wptr); // 处理正确回答
+            score++;
         }
+        count++;
+        getch();
     }
-    return score;
+    return (score * 100/count);
 }
 
-int RevisionModule::mcQuiz(){
-    int score = revisionList.size();
-    for(auto wptr:revisionList){
-        //system("cls");
-        int answer = (rand() % 4);
+int RevisionModule::mcQuiz(){ // 选择题复习
+    int score = 0;
+    int count = 0;
+    for(auto wptr:revisionList){ // 遍历复习列表
+        system("cls");
+        int answer = (rand() % 4); // 随机在抽取正确答案的数字
         string choice[4];
-        choice[answer] = wptr->getMeaningsString();
-        for(int i = 0; i < 4; i++){
+        choice[answer] = wptr->getMeaningsString(); // 获得正确选项的文字
+        for(int i = 0; i < 4; i++){ // 在单词本中随机抽取余下的选项
             if(i != answer){
                 do{
                     int pick = rand() % wordBook.getList().size();
                     choice[i] = wordBook.getList()[pick].getMeaningsString();
                 }
-                while(choice[i] == choice[answer]);
+                while(choice[i] == choice[answer]); // 确保每个选项的独特性
             }
         }
         cout<<"选择正确解释 ` 返回"<<endl;
@@ -148,29 +160,33 @@ int RevisionModule::mcQuiz(){
         if(input == '`'){
             return score;
         }
-        if(input - '0' - 1 == answer){
+        if(input - '0' - 1 == answer){ // 回答正确
             cout<<"正确"<<endl;
+            cout<<"按任意键继续"<<endl;
             correctAnswer(wptr);
+            score++;
         }
-        else{
+        else{ // 回答错误
             cout<<"错误 正确答案： "<<choice[answer]<<endl;
+            cout<<"按任意键继续"<<endl;
             wrongAnswer(wptr);
-            score--;
         }
+        count++;
+        getch();
     }
-    return score;
+    return (score * 100/count);
 }
 
-void RevisionModule::correctAnswer(WordCard *wptr){
-    if(wptr->getStudyDate().back() != date){
+void RevisionModule::correctAnswer(WordCard *wptr){ // 正确答案处理
+    if(wptr->getStudyDate().back() != date){ // 将最新日期加入
         wptr->setStudyStage(wptr->getPriority(), date);
     }
 }
 
-void RevisionModule::wrongAnswer(WordCard *wptr){
+void RevisionModule::wrongAnswer(WordCard *wptr){ // 错误答案处理
     vector<int> newDate;
     newDate.push_back(date);
-    wptr->setStudyStage(wptr->getPriority() + 1, newDate);
+    wptr->setStudyStage(wptr->getPriority() + 1, newDate);  // 重置日期，优先级提高
 }
 
 RevisionModule::~RevisionModule(){
